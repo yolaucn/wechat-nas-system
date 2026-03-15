@@ -1,0 +1,86 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# Deployment files
+deploy.sh
+server-setup.sh
+ecosystem.config.js
+nginx.conf
+*BAOTA*.md
+*DEPLOYMENT*.md
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Build outputs
+dist/
+build/
+
+# Uploads and temporary files
+uploads/
+temp/
+tmp/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Taro specific
+nas-frontend/dist/
+nas-frontend/.temp/
+nas-frontend/.rn_temp/
+
+# Package files
+*.tgz
+*.tar.gz
+
+# Server and deployment related
+root@*
+*.pem
+*.key
+*.crt
+
+# PM2
+ecosystem.config.js
+
+# Database
+*.db
+*.sqlite
+
+# Certificates
+*.pem
+*.key
+*.crt

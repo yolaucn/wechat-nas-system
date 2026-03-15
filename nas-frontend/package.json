@@ -1,0 +1,51 @@
+{
+  "name": "nas-frontend",
+  "version": "1.0.0",
+  "description": "NAS系统微信小程序前端",
+  "main": "index.js",
+  "scripts": {
+    "build:weapp": "taro build --type weapp",
+    "build:h5": "taro build --type h5",
+    "dev:weapp": "npm run build:weapp -- --watch",
+    "dev:h5": "npm run build:h5 -- --watch",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "keywords": [
+    "taro",
+    "react",
+    "miniprogram"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@tarojs/components": "^3.6.20",
+    "@tarojs/helper": "^3.6.20",
+    "@tarojs/plugin-framework-react": "^3.6.20",
+    "@tarojs/plugin-platform-h5": "^3.6.20",
+    "@tarojs/plugin-platform-weapp": "^3.6.20",
+    "@tarojs/react": "^3.6.20",
+    "@tarojs/router": "^3.6.20",
+    "@tarojs/runtime": "^3.6.20",
+    "@tarojs/taro": "^3.6.20",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "taro-ui": "^3.0.0-alpha.3",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.3",
+    "@tarojs/cli": "^3.6.20",
+    "@tarojs/webpack5-runner": "^3.6.20",
+    "@types/react": "^18.2.38",
+    "@types/webpack-env": "^1.18.4",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
+    "babel-preset-taro": "^3.6.20",
+    "eslint": "^8.54.0",
+    "eslint-config-taro": "^3.6.20",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.2.2",
+    "webpack": "^5.89.0"
+  }
+}

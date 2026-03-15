@@ -1,0 +1,184 @@
+.admin-users-container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 20px;
+
+  .header {
+    background: #fff;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    .title {
+      font-size: 36px;
+      font-weight: bold;
+      color: #333;
+    }
+  }
+
+  .filters {
+    background: #fff;
+    padding: 20px 30px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      flex: 1;
+
+      .filter-label {
+        font-size: 28px;
+        color: #666;
+        margin-right: 10px;
+      }
+
+      .picker {
+        flex: 1;
+        padding: 10px 20px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        font-size: 26px;
+        color: #333;
+      }
+    }
+  }
+
+  .user-list {
+    height: calc(100vh - 300px);
+    padding: 20px 30px;
+
+    .empty {
+      text-align: center;
+      padding: 100px 0;
+
+      .empty-icon {
+        font-size: 100px;
+        display: block;
+        margin-bottom: 20px;
+      }
+
+      .empty-text {
+        font-size: 28px;
+        color: #999;
+      }
+    }
+
+    .user-item {
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+      .user-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+
+        .user-name {
+          font-size: 32px;
+          font-weight: bold;
+          color: #333;
+          flex: 1;
+        }
+
+        .user-role {
+          padding: 8px 16px;
+          border-radius: 8px;
+          margin-right: 10px;
+
+          &.admin {
+            background: #ff4d4f;
+          }
+
+          &.user {
+            background: #1890ff;
+          }
+
+          &.guest {
+            background: #52c41a;
+          }
+
+          .role-text {
+            font-size: 22px;
+            color: #fff;
+          }
+        }
+
+        .user-status {
+          padding: 8px 16px;
+          border-radius: 8px;
+
+          &.active {
+            background: #52c41a;
+          }
+
+          &.disabled {
+            background: #999;
+          }
+
+          .status-text {
+            font-size: 22px;
+            color: #fff;
+          }
+        }
+      }
+
+      .user-info {
+        margin-bottom: 20px;
+
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+          border-bottom: 1px solid #f0f0f0;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .info-label {
+            font-size: 26px;
+            color: #666;
+          }
+
+          .info-value {
+            font-size: 26px;
+            color: #333;
+          }
+        }
+      }
+
+      .user-actions {
+        display: flex;
+        gap: 20px;
+
+        .action-btn {
+          flex: 1;
+          height: 70px;
+          line-height: 70px;
+          font-size: 28px;
+          border-radius: 8px;
+
+          &.primary {
+            background: #1890ff;
+            color: #fff;
+          }
+
+          &.danger {
+            background: #ff4d4f;
+            color: #fff;
+          }
+        }
+      }
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 0;
+      font-size: 28px;
+      color: #999;
+    }
+  }
+}
