@@ -2,9 +2,7 @@ export default {
   env: {
     NODE_ENV: '"development"'
   },
-  defineConstants: {
-    API_BASE_URL: '"http://localhost:3000/api/v1"'
-  },
+  defineConstants: {},
   mini: {},
   h5: {
     devServer: {

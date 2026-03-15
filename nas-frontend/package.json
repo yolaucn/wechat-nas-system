@@ -5,9 +5,13 @@
   "main": "index.js",
   "scripts": {
     "build:weapp": "taro build --type weapp",
+    "build:weapp:prod": "cross-env NODE_ENV=production taro build --type weapp",
     "build:h5": "taro build --type h5",
-    "dev:weapp": "npm run build:weapp -- --watch",
-    "dev:h5": "npm run build:h5 -- --watch",
+    "build:h5:prod": "cross-env NODE_ENV=production taro build --type h5",
+    "dev:weapp": "taro build --type weapp --watch",
+    "dev:weapp:prod": "cross-env NODE_ENV=production taro build --type weapp --watch",
+    "dev:h5": "taro build --type h5 --watch",
+    "dev:h5:prod": "cross-env NODE_ENV=production taro build --type h5 --watch",
     "lint": "eslint src --ext .ts,.tsx"
   },
   "keywords": [
@@ -41,6 +45,7 @@
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
     "babel-preset-taro": "^3.6.20",
+    "cross-env": "^7.0.3",
     "eslint": "^8.54.0",
     "eslint-config-taro": "^3.6.20",
     "eslint-plugin-react": "^7.33.2",

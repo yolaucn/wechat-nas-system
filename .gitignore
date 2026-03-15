@@ -49,6 +49,7 @@ tmp/
 *.swo
 *~
 
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -62,6 +63,7 @@ Thumbs.db
 nas-frontend/dist/
 nas-frontend/.temp/
 nas-frontend/.rn_temp/
+nas-frontend/.swc/
 
 # Package files
 *.tgz

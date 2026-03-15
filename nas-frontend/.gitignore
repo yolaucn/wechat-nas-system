@@ -6,6 +6,7 @@ dist/
 
 # Taro
 .temp/
+.swc/
 
 # Environment variables
 .env

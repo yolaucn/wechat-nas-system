@@ -1,16 +1,20 @@
 import Taro from '@tarojs/taro';
 
 // API 基础地址配置
-// 生产环境使用真实域名，开发环境使用 localhost
+// 使用简单的环境判断
 const getApiBaseUrl = () => {
-  // 在编译时，Taro 会将 process.env.NODE_ENV 替换为实际值
+  // 检查是否在生产环境
   if (process.env.NODE_ENV === 'production') {
+    console.log('Using production API URL');
     return 'https://nas.okdev.ink/api/v1';
   }
+  
+  console.log('Using development API URL');
   return 'http://localhost:3000/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();
+console.log('Final API_BASE_URL:', API_BASE_URL);
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
