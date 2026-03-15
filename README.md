@@ -94,7 +94,7 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/wechat-nas-system.git
+git clone https://github.com/yolaucn/wechat-nas-system.git
 cd wechat-nas-system
 ```
 
@@ -209,14 +209,150 @@ npm run build:weapp
 3. 启动前端：`cd nas-frontend && npm run dev:weapp`
 4. 使用微信开发者工具打开前端项目
 
-### 生产环境
+### 生产环境部署
 
-详细部署指南请参考：[部署文档](nas-backend/DEPLOYMENT.md)
+#### 服务器要求
+- 操作系统: Ubuntu 20.04+ / CentOS 7+
+- Node.js: 18+
+- MongoDB: 6.0+
+- Nginx: 1.18+
+- 内存: 2GB+
+- 存储: 20GB+
 
-支持以下部署方式：
-- 宝塔面板部署
-- Docker 部署
-- 传统服务器部署
+#### 快速部署步骤
+
+1. **准备服务器环境**
+```bash
+# 安装 Node.js 18+
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# 安装 MongoDB
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+sudo apt-get update
+sudo apt-get install -y mongodb-org
+
+# 安装 Nginx
+sudo apt-get install -y nginx
+
+# 安装 PM2
+sudo npm install -g pm2
+```
+
+2. **部署后端代码**
+```bash
+# 克隆代码到服务器
+git clone https://github.com/yolaucn/wechat-nas-system.git
+cd wechat-nas-system/nas-backend
+
+# 安装依赖
+npm install --production
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，配置数据库连接、JWT密钥等
+
+# 启动服务
+pm2 start npm --name "nas-backend" -- start
+pm2 save
+pm2 startup
+```
+
+3. **配置 Nginx**
+```bash
+# 创建 Nginx 配置文件
+sudo nano /etc/nginx/sites-available/nas
+```
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+# 启用站点
+sudo ln -s /etc/nginx/sites-available/nas /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+4. **配置 HTTPS（推荐）**
+```bash
+# 安装 Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 申请 SSL 证书
+sudo certbot --nginx -d your-domain.com
+```
+
+5. **配置微信小程序域名**
+- 登录微信公众平台
+- 进入"开发" -> "开发管理" -> "开发设置"
+- 配置服务器域名：
+  - request合法域名: `https://your-domain.com`
+  - uploadFile合法域名: `https://your-domain.com`
+  - downloadFile合法域名: `https://your-domain.com`
+
+#### Docker 部署（可选）
+
+```bash
+# 构建镜像
+docker build -t nas-backend ./nas-backend
+
+# 运行容器
+docker run -d \
+  --name nas-backend \
+  -p 3000:3000 \
+  -v /data/uploads:/app/uploads \
+  -e MONGODB_URI=mongodb://your-mongodb-host:27017/nas \
+  nas-backend
+```
+
+#### 常用管理命令
+
+```bash
+# PM2 管理
+pm2 status              # 查看状态
+pm2 logs nas-backend    # 查看日志
+pm2 restart nas-backend # 重启服务
+pm2 stop nas-backend    # 停止服务
+
+# Nginx 管理
+sudo systemctl status nginx   # 查看状态
+sudo systemctl restart nginx  # 重启
+sudo nginx -t                 # 测试配置
+
+# MongoDB 管理
+sudo systemctl status mongod  # 查看状态
+sudo systemctl restart mongod # 重启
+```
+
+#### 备份建议
+
+```bash
+# 数据库备份
+mongodump --db nas --out /backup/mongodb/$(date +%Y%m%d)
+
+# 文件备份
+tar -czf /backup/files/nas-files-$(date +%Y%m%d).tar.gz ./uploads
+```
+
+更多详细部署信息请参考：[部署文档](nas-backend/DEPLOYMENT.md)
 
 ## 🔑 API 文档
 
@@ -274,7 +410,7 @@ npm run build:weapp
 
 ## 📞 联系方式
 
-- 项目链接：https://github.com/your-username/wechat-nas-system
+- 项目链接：https://github.com/yolaucn/wechat-nas-system
 
 ## 🗺️ 路线图
 
