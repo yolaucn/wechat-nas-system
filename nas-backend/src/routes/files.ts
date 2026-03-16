@@ -8,7 +8,11 @@ import {
   deleteFile,
   renameFile,
   setFilePermissions,
-  getFilePermissions
+  getFilePermissions,
+  createFolder,
+  deleteFolder,
+  renameFolder,
+  moveFile
 } from '../controllers/fileController';
 import { verifyToken } from '../middleware/auth';
 
@@ -35,5 +39,13 @@ router.put('/:fileId/rename', verifyToken, renameFile);
 // 文件权限管理（需要认证）
 router.get('/:fileId/permissions', verifyToken, getFilePermissions);
 router.put('/:fileId/permissions', verifyToken, setFilePermissions);
+
+// 文件夹管理（需要认证）
+router.post('/folder', verifyToken, createFolder);
+router.delete('/folder/:folderId', verifyToken, deleteFolder);
+router.put('/folder/:folderId/rename', verifyToken, renameFolder);
+
+// 文件移动（需要认证）
+router.put('/:fileId/move', verifyToken, moveFile);
 
 export default router;

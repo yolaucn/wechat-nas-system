@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
+import mongoose from 'mongoose';
 import File from '../models/File';
 import User from '../models/User';
 import localStorageService from '../services/localStorage';
@@ -127,6 +128,7 @@ export const uploadFile = async (req: Request, res: Response): Promise<void> => 
 export const getFileList = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId!;
+    const userRole = req.userRole!; // 从中间件获取用户角色
     const { 
       folder = '/', 
       page = '1', 
@@ -139,12 +141,24 @@ export const getFileList = async (req: Request, res: Response): Promise<void> =>
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    // 构建查询条件
-    const query: any = {
-      uploaderId: userId,
+    // 根据用户角色构建查询条件
+    let query: any = {
       status: 'active',
       folder: folder,
     };
+
+    if (userRole === 'admin') {
+      // 管理员可以看到所有文件
+      // 不添加 uploaderId 限制
+    } else {
+      // 普通用户只能看到管理员上传的文件和自己上传的文件
+      const adminUsers = await User.find({ role: 'admin' }).select('_id');
+      const adminIds = adminUsers.map((admin: any) => admin._id);
+      
+      query.uploaderId = { 
+        $in: [...adminIds, new mongoose.Types.ObjectId(userId)] 
+      };
+    }
 
     // 构建排序
     const sort: any = {};
@@ -152,7 +166,8 @@ export const getFileList = async (req: Request, res: Response): Promise<void> =>
 
     // 查询文件列表
     const files = await File.find(query)
-      .select('filename originalName mimeType size url folder createdAt updatedAt')
+      .select('filename originalName mimeType size url path folder createdAt updatedAt uploaderId')
+      .populate('uploaderId', 'nickname role')
       .sort(sort)
       .skip(skip)
       .limit(limitNum)
@@ -161,10 +176,22 @@ export const getFileList = async (req: Request, res: Response): Promise<void> =>
     // 查询总数
     const total = await File.countDocuments(query);
 
+    // 为每个文件添加权限信息
+    const filesWithPermissions = files.map((file: any) => ({
+      ...file,
+      canEdit: userRole === 'admin' || file.uploaderId._id.toString() === userId,
+      canDelete: userRole === 'admin' || file.uploaderId._id.toString() === userId,
+      canShare: true, // 所有用户都可以分享
+      uploader: {
+        nickname: file.uploaderId.nickname,
+        role: file.uploaderId.role
+      }
+    }));
+
     res.status(200).json({
       success: true,
       data: {
-        files,
+        files: filesWithPermissions,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -387,8 +414,9 @@ export const renameFile = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // 检查权限（只有文件所有者可以重命名）
-    if (file.uploaderId.toString() !== userId) {
+    // 检查权限（只有管理员或文件所有者可以重命名）
+    const userRole = req.userRole!;
+    if (file.uploaderId.toString() !== userId && userRole !== 'admin') {
       res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -571,6 +599,327 @@ export const getFilePermissions = async (req: Request, res: Response): Promise<v
     });
   } catch (error) {
     logger.error('Get file permissions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * 创建文件夹接口
+ * POST /api/v1/files/folder
+ */
+export const createFolder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    const userRole = req.userRole!;
+    const { folderName, parentPath = '/' } = req.body;
+
+    // 只有管理员可以创建文件夹
+    if (userRole !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Only administrators can create folders',
+      });
+      return;
+    }
+
+    if (!folderName || folderName.trim() === '') {
+      res.status(400).json({
+        success: false,
+        message: 'Folder name is required',
+      });
+      return;
+    }
+
+    // 构建完整的文件夹路径
+    const fullPath = parentPath === '/' ? `/${folderName}` : `${parentPath}/${folderName}`;
+
+    // 检查文件夹是否已存在
+    const existingFolder = await File.findOne({
+      folder: parentPath,
+      filename: folderName,
+      mimeType: 'folder',
+      status: 'active',
+    });
+
+    if (existingFolder) {
+      res.status(400).json({
+        success: false,
+        message: 'Folder already exists',
+      });
+      return;
+    }
+
+    // 创建文件夹记录
+    const folder = new File({
+      filename: folderName,
+      originalName: folderName,
+      mimeType: 'folder',
+      size: 0,
+      path: fullPath,
+      url: '',
+      uploaderId: userId,
+      folder: parentPath,
+    });
+
+    await folder.save();
+
+    logger.info(`Folder created: ${fullPath} by user ${userId}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Folder created successfully',
+      data: {
+        id: folder._id,
+        filename: folder.filename,
+        path: fullPath,
+        createdAt: folder.createdAt,
+      },
+    });
+  } catch (error) {
+    logger.error('Create folder error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * 删除文件夹接口
+ * DELETE /api/v1/files/folder/:folderId
+ */
+export const deleteFolder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    const userRole = req.userRole!;
+    const { folderId } = req.params;
+
+    // 只有管理员可以删除文件夹
+    if (userRole !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Only administrators can delete folders',
+      });
+      return;
+    }
+
+    const folder = await File.findById(folderId);
+
+    if (!folder || folder.mimeType !== 'folder') {
+      res.status(404).json({
+        success: false,
+        message: 'Folder not found',
+      });
+      return;
+    }
+
+    // 检查文件夹是否为空
+    const folderPath = folder.path;
+    const filesInFolder = await File.countDocuments({
+      folder: folderPath,
+      status: 'active',
+    });
+
+    if (filesInFolder > 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot delete non-empty folder',
+      });
+      return;
+    }
+
+    // 删除文件夹
+    folder.status = 'deleted' as any;
+    await folder.save();
+
+    logger.info(`Folder deleted: ${folderPath} by user ${userId}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Folder deleted successfully',
+    });
+  } catch (error) {
+    logger.error('Delete folder error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * 重命名文件夹接口
+ * PUT /api/v1/files/folder/:folderId/rename
+ */
+export const renameFolder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    const userRole = req.userRole!;
+    const { folderId } = req.params;
+    const { folderName } = req.body;
+
+    // 只有管理员可以重命名文件夹
+    if (userRole !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Only administrators can rename folders',
+      });
+      return;
+    }
+
+    if (!folderName || folderName.trim() === '') {
+      res.status(400).json({
+        success: false,
+        message: 'Folder name is required',
+      });
+      return;
+    }
+
+    const folder = await File.findById(folderId);
+
+    if (!folder || folder.mimeType !== 'folder') {
+      res.status(404).json({
+        success: false,
+        message: 'Folder not found',
+      });
+      return;
+    }
+
+    // 检查新文件夹名是否已存在
+    const existingFolder = await File.findOne({
+      folder: folder.folder,
+      filename: folderName,
+      mimeType: 'folder',
+      status: 'active',
+      _id: { $ne: folderId },
+    });
+
+    if (existingFolder) {
+      res.status(400).json({
+        success: false,
+        message: 'Folder name already exists',
+      });
+      return;
+    }
+
+    const oldPath = folder.path;
+    const newPath = folder.folder === '/' ? `/${folderName}` : `${folder.folder}/${folderName}`;
+
+    // 更新文件夹名称和路径
+    folder.filename = folderName;
+    folder.originalName = folderName;
+    folder.path = newPath;
+    await folder.save();
+
+    // 更新所有子文件和子文件夹的路径
+    await File.updateMany(
+      { folder: oldPath, status: 'active' },
+      { folder: newPath }
+    );
+
+    logger.info(`Folder renamed: ${oldPath} to ${newPath} by user ${userId}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Folder renamed successfully',
+      data: {
+        id: folder._id,
+        filename: folder.filename,
+        path: newPath,
+      },
+    });
+  } catch (error) {
+    logger.error('Rename folder error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * 移动文件到文件夹接口
+ * PUT /api/v1/files/:fileId/move
+ */
+export const moveFile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    const userRole = req.userRole!;
+    const { fileId } = req.params;
+    const { targetFolder } = req.body;
+
+    // 只有管理员可以移动文件
+    if (userRole !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Only administrators can move files',
+      });
+      return;
+    }
+
+    const file = await File.findById(fileId);
+
+    if (!file || file.mimeType === 'folder') {
+      res.status(404).json({
+        success: false,
+        message: 'File not found',
+      });
+      return;
+    }
+
+    // 验证目标文件夹存在
+    if (targetFolder !== '/') {
+      const targetFolderExists = await File.findOne({
+        path: targetFolder,
+        mimeType: 'folder',
+        status: 'active',
+      });
+
+      if (!targetFolderExists) {
+        res.status(404).json({
+          success: false,
+          message: 'Target folder not found',
+        });
+        return;
+      }
+    }
+
+    // 检查目标文件夹中是否已有同名文件
+    const existingFile = await File.findOne({
+      folder: targetFolder,
+      filename: file.filename,
+      status: 'active',
+      _id: { $ne: fileId },
+    });
+
+    if (existingFile) {
+      res.status(400).json({
+        success: false,
+        message: 'File with same name already exists in target folder',
+      });
+      return;
+    }
+
+    // 移动文件
+    file.folder = targetFolder;
+    await file.save();
+
+    logger.info(`File moved: ${fileId} to ${targetFolder} by user ${userId}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'File moved successfully',
+      data: {
+        id: file._id,
+        filename: file.filename,
+        folder: file.folder,
+      },
+    });
+  } catch (error) {
+    logger.error('Move file error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

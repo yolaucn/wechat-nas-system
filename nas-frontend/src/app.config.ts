@@ -5,7 +5,6 @@ export default defineAppConfig({
     'pages/file-detail/index',
     'pages/share-list/index',
     'pages/user/index',
-    'pages/index/index',
     'pages/admin-users/index',
   ],
   window: {

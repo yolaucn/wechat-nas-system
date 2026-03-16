@@ -308,3 +308,48 @@ export const getShareList = async (params: {
   });
 };
 
+
+// ==================== 文件夹管理相关 API ====================
+
+/**
+ * 创建文件夹
+ */
+export const createFolder = async (folderName: string, parentPath: string = '/') => {
+  return request('/files/folder', {
+    method: 'POST',
+    data: { folderName, parentPath },
+    showLoading: true,
+  });
+};
+
+/**
+ * 删除文件夹
+ */
+export const deleteFolder = async (folderId: string) => {
+  return request(`/files/folder/${folderId}`, {
+    method: 'DELETE',
+    showLoading: true,
+  });
+};
+
+/**
+ * 重命名文件夹
+ */
+export const renameFolder = async (folderId: string, folderName: string) => {
+  return request(`/files/folder/${folderId}/rename`, {
+    method: 'PUT',
+    data: { folderName },
+    showLoading: true,
+  });
+};
+
+/**
+ * 移动文件到文件夹
+ */
+export const moveFile = async (fileId: string, targetFolder: string) => {
+  return request(`/files/${fileId}/move`, {
+    method: 'PUT',
+    data: { targetFolder },
+    showLoading: true,
+  });
+};

@@ -23,12 +23,13 @@ interface UserState {
   login: (user: User, token: string) => void;
   logout: () => void;
   updateStorageUsed: (storageUsed: number) => void;
+  initializeFromStorage: () => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
   user: null,
-  token: Taro.getStorageSync('token') || null,
-  isLoggedIn: !!Taro.getStorageSync('token'),
+  token: null,
+  isLoggedIn: false,
 
   setUser: (user) => set({ user, isLoggedIn: true }),
 
@@ -53,4 +54,28 @@ export const useUserStore = create<UserState>((set) => ({
     set((state) => ({
       user: state.user ? { ...state.user, storageUsed } : null,
     })),
+
+  initializeFromStorage: () => {
+    try {
+      const token = Taro.getStorageSync('token');
+      const userStr = Taro.getStorageSync('user');
+      
+      if (token) {
+        let user = null;
+        if (userStr) {
+          try {
+            user = JSON.parse(userStr);
+          } catch (e) {
+            console.error('Failed to parse user from storage:', e);
+          }
+        }
+        set({ token, user, isLoggedIn: true });
+      } else {
+        set({ token: null, user: null, isLoggedIn: false });
+      }
+    } catch (error) {
+      console.error('Failed to initialize from storage:', error);
+      set({ token: null, user: null, isLoggedIn: false });
+    }
+  },
 }));

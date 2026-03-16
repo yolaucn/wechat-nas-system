@@ -61,7 +61,7 @@ const FileSchema: Schema = new Schema(
     },
     url: {
       type: String,
-      required: true,
+      default: '',
     },
     uploaderId: {
       type: Schema.Types.ObjectId,

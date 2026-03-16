@@ -1,14 +1,12 @@
 import { View, Text, Button, Image } from '@tarojs/components';
-import { useEffect, useState } from 'react';
 import Taro, { useLoad, useShareAppMessage } from '@tarojs/taro';
 import { useUserStore } from '../../store/userStore';
 import { getUserInfo } from '../../utils/request';
-import { requireAuth, navigateToLogin } from '../../utils/auth';
+import { navigateToLogin } from '../../utils/auth';
 import './index.scss';
 
 export default function User() {
-  const { user, isLoggedIn, logout, setUser } = useUserStore();
-  const [loading, setLoading] = useState(false);
+  const { user, isLoggedIn, logout, setUser, initializeFromStorage } = useUserStore();
 
   // 启用分享功能
   useShareAppMessage(() => {
@@ -20,24 +18,39 @@ export default function User() {
   });
 
   useLoad(() => {
-    // 暂时注释掉登录检查
-    // if (!requireAuth()) {
-    //   return;
-    // }
-    loadUserInfo();
+    // 初始化用户状态
+    initializeUserState();
   });
 
+  const initializeUserState = async () => {
+    // 从本地存储初始化状态
+    initializeFromStorage();
+    
+    // 检查本地存储的token
+    const token = Taro.getStorageSync('token');
+    if (!token) {
+      // 没有token，显示未登录状态
+      return;
+    }
+
+    // 有token，尝试获取用户信息
+    await loadUserInfo();
+  };
+
   const loadUserInfo = async () => {
-    setLoading(true);
     try {
       const response = await getUserInfo();
       if (response.success) {
         setUser(response.data);
+      } else {
+        console.error('获取用户信息失败:', response.message);
+        // 如果获取用户信息失败，可能是token过期，清除登录状态
+        logout();
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);
-    } finally {
-      setLoading(false);
+      // 网络错误或其他错误，清除登录状态
+      logout();
     }
   };
 
@@ -131,12 +144,15 @@ export default function User() {
 
       {/* 功能列表 */}
       <View className='menu-list'>
-        <View className='menu-item' onClick={() => Taro.navigateTo({ url: '/pages/files/index' })}>
+        <View className='menu-item' onClick={() => {
+          // 切换到文件tab页面
+          Taro.switchTab({ url: '/pages/files/index' });
+        }}>
           <Text className='menu-icon'>📁</Text>
           <Text className='menu-text'>我的文件</Text>
           <Text className='menu-arrow'>›</Text>
         </View>
-        <View className='menu-item' onClick={() => Taro.navigateTo({ url: '/pages/share-list/index' })}>
+        <View className='menu-item' onClick={() => Taro.switchTab({ url: '/pages/share-list/index' })}>
           <Text className='menu-icon'>🔗</Text>
           <Text className='menu-text'>我的分享</Text>
           <Text className='menu-arrow'>›</Text>
@@ -148,11 +164,6 @@ export default function User() {
             <Text className='menu-arrow'>›</Text>
           </View>
         )}
-        <View className='menu-item' onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
-          <Text className='menu-icon'>🧪</Text>
-          <Text className='menu-text'>API测试</Text>
-          <Text className='menu-arrow'>›</Text>
-        </View>
         <View className='menu-item'>
           <Text className='menu-icon'>⚙️</Text>
           <Text className='menu-text'>设置</Text>

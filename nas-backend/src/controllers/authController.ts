@@ -24,7 +24,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 1. 使用code换取openid和session_key
+    let openid: string;
+    
+    // 使用code换取openid和session_key
     const wechatResponse = await axios.get(
       'https://api.weixin.qq.com/sns/jscode2session',
       {
@@ -37,7 +39,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       }
     );
 
-    const { openid, errcode, errmsg } = wechatResponse.data;
+    const { openid: wechatOpenid, errcode, errmsg } = wechatResponse.data;
 
     if (errcode) {
       logger.error('WeChat login error:', { errcode, errmsg });
@@ -48,15 +50,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (!openid) {
+    if (!wechatOpenid) {
       res.status(400).json({
         success: false,
         message: 'Failed to get openid from WeChat',
       });
       return;
     }
+    
+    openid = wechatOpenid;
 
-    // 2. 查询或创建用户
+    // 查询或创建用户
     let user = await User.findOne({ openid });
 
     if (!user) {
@@ -77,13 +81,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       logger.info(`User logged in: ${user._id}`);
     }
 
-    // 3. 生成JWT token
+    // 生成JWT token
     const token = generateJWT({
       userId: user._id.toString(),
       role: user.role,
     });
 
-    // 4. 创建Session记录
+    // 创建Session记录
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7天后过期
 
@@ -94,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
     await session.save();
 
-    // 5. 返回响应
+    // 返回响应
     res.status(200).json({
       success: true,
       message: 'Login successful',
